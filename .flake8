@@ -1,0 +1,15 @@
+# black max_line_legnth와 일치해야 함.
+max-line-length = 88
+
+# Specify a list of codes to ignore
+ignore =
+    # E402, module level import not at top of file
+    E402,
+    # E261, at least two spaces before inline comment
+    E261
+# Provide a comma-separated list of glob patterns to exclude from linting checks.
+exclude =
+        .git,
+        __pycache__
+# Print the total number of errors.
+count = True

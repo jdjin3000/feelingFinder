@@ -1,0 +1,15 @@
+{
+    "python.linting.enabled": true,
+    "python.linting.flake8Enabled": true,
+    "python.formatting.provider": "black",
+
+    "[python]": {
+        // 코드를 저장할 떄 마다 실행
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            // isort 사용 설정
+            "source.organizeImports": true,
+            "python.sortImports": true
+        }
+    }
+}
