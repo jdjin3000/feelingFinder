@@ -1,0 +1,52 @@
+name: Continuous Training with Model Monitoring
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+jobs:
+  check-model:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Install dependencies
+        run:
+          python3 -m venv .venv
+          source .venv/bin/activate
+          pip install -r requirements.txt
+          pip install pytest
+      - name: Run tests
+        run:
+          source .venv/bin/activate
+          pytest tests/
+      - name: Monitor model performance
+        uses: model-monitoring-service/webhook@v1
+        with:
+          url: ${{ secrets.WEBHOOK_URL }}
+  train-model:
+    needs: check-model
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Install dependencies
+        run:
+          python3 -m venv .venv
+          source .venv/bin/activate
+          pip install -r requirements.txt
+      - name: Train model
+        run:
+          source .venv/bin/activate
+          python train.py
+      - name: Export model
+        if: success()
+        run:
+          source .venv/bin/activate
+          torch-model-archiver --model-name mymodel --version 1.0 --serialized-file model.pt --extra-files index_to_name.json --handler handler.py
+      - name: Start TorchServe
+        if: success()
+        run:
+          source .venv/bin/activate
+          torchserve --stop
+          torchserve --start --ncs --model-store model_store --models mymodel.mar

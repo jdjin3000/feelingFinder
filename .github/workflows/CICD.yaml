@@ -1,0 +1,54 @@
+name: CI/CD
+on:
+  push:
+    branches:
+      - main
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Install dependencies
+      run:
+        python3 -m venv .venv
+        source .venv/bin/activate
+        pip install -r requirements.txt
+        pip install pytest
+    - name: Test code
+      run:
+        source .venv/bin/activate
+        pytest tests/
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Install dependencies
+      run:
+        python3 -m venv .venv
+        source .venv/bin/activate
+        pip install -r requirements.txt
+    - name: Train model
+      run:
+        source .venv/bin/activate
+        python train.py
+    - name: Export model
+      run:
+        source .venv/bin/activate
+        torch-model-archiver --model-name mymodel --version 1.0 --serialized-file model.pt --extra-files index_to_name.json --handler handler.py
+    - name: Start TorchServe
+      run:
+        source .venv/bin/activate
+        torchserve --start --ncs --model-store model_store --models mymodel.mar
+    - name: Deploy Streamlit app
+      uses: appleboy/ssh-action@v0.0.3
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        password: ${{ secrets.PASSWORD }}
+        script:
+          cd /var/app/current
+          source /var/app/venv/staging-LATEST/bin/activate
+          streamlit run app.py
